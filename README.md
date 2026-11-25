@@ -1,9 +1,20 @@
-# CoWorkHub — API REST de gestión de espacios de coworking
+# CoWorkHub — Gestión de una red de coworking
 
-Proyecto final del curso Spring Boot (módulos 01–08). Backend **exclusivamente REST** que reemplaza las hojas de cálculo
-de una red de coworking: sedes, salas, equipamiento, planes de membresía, miembros y cuentas, disponibilidad, reservas,
-servicios adicionales, costos, penalizaciones y consumo mensual de horas, con control de acceso por rol y por propiedad
-del recurso.
+Proyecto final del curso Spring Boot (módulos 01–08). Aplicación web que reemplaza las hojas de cálculo de una red de
+coworking: sedes, salas, equipamiento, planes de membresía, miembros y cuentas, disponibilidad, reservas, servicios
+adicionales, costos, penalizaciones y consumo mensual de horas, con control de acceso por rol y por propiedad del recurso.
+
+Está formada por:
+
+- **Backend**: API REST con Spring Boot 4.1 y Java 21 (este proyecto Maven).
+- **Frontend**: HTML, CSS y JavaScript sin frameworks, en `src/main/resources/static/`, que consume la API.
+- **Base de datos**: MySQL 8.
+
+## Integrantes
+
+| Nombre | Usuario GitHub | Rol |
+|---|---|---|
+| Rubén Carreño | `RubenCarrenoo` | Desarrollo completo (trabajo individual) |
 
 ---
 
@@ -22,6 +33,7 @@ del recurso.
 | springdoc-openapi | 3.2.0 | Swagger UI / OpenAPI 3 |
 | Spring Boot Actuator | (Boot) | `/actuator/health` |
 | JUnit 5 + Mockito + Spring Security Test | (Boot) | Pruebas |
+| HTML5 + CSS3 + JavaScript (ES2022, `fetch`) | — | Frontend, sin frameworks ni npm |
 
 No se usa Lombok ni MapStruct (no forman parte del stack exigido): getters/setters y mappers están escritos a mano.
 
@@ -54,7 +66,9 @@ src/main/java/com/coworkhub
 └── validation/     Validaciones personalizadas (@ValidTimeRange, @ValidAccountData)
 src/main/resources
 ├── application.properties
-└── import.sql      Datos iniciales (Hibernate lo ejecuta al arrancar)
+├── import.sql      Datos iniciales (Hibernate lo ejecuta al arrancar)
+├── migration.sql   Script completo: base, usuario, esquema y datos de prueba (sin Hibernate)
+└── static/         Frontend: index.html (login), app.html, css/, js/ (api.js, ui.js, app.js, views/)
 docs/openapi.json   Especificación OpenAPI exportada
 postman/            Colección con los 14 escenarios de aceptación
 scripts/            SQL de creación de BD/usuario y prueba de concurrencia
@@ -149,16 +163,58 @@ En Windows PowerShell (donde `<` no existe):
 & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe' -u root -p -e "source scripts/01-create-database.sql"
 ```
 
-Alternativa con Docker:
+Alternativa con Docker (los datos quedan en el volumen `coworkhub-datos`):
 
 ```bash
-docker run -d --name coworkhub-mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=coworkhub -e MYSQL_USER=coworkhub -e MYSQL_PASSWORD=coworkhub mysql:8.4
+docker run -d --name coworkhub-mysql \
+  -e MYSQL_DATABASE=coworkhub \
+  -e MYSQL_USER=coworkhub \
+  -e MYSQL_PASSWORD=coworkhub \
+  -e MYSQL_ROOT_PASSWORD=root \
+  -p 3306:3306 \
+  -v coworkhub-datos:/var/lib/mysql \
+  mysql:8.4
 ```
+
+En Windows (PowerShell o CMD), en una sola línea:
+
+```powershell
+docker run -d --name coworkhub-mysql -e MYSQL_DATABASE=coworkhub -e MYSQL_USER=coworkhub -e MYSQL_PASSWORD=coworkhub -e MYSQL_ROOT_PASSWORD=root -p 3306:3306 -v coworkhub-datos:/var/lib/mysql mysql:8.4
+```
+
+Espere a que `docker logs coworkhub-mysql` muestre `ready for connections`. Si el puerto 3306 está ocupado, use
+`-p 3307:3306` y cambie el puerto en `DB_URL` (ver variables de entorno).
+
+**Opción sin Hibernate: `migration.sql`.** `src/main/resources/migration.sql` crea la base, el usuario, las 10 tablas
+(con claves, índices y restricciones) y carga los mismos datos de prueba que `import.sql`:
+
+```bash
+mysql -u root -p < src/main/resources/migration.sql
+```
+
+Sirve para revisar el modelo o preparar la base a mano. Para usarla así, arranque con
+`spring.jpa.hibernate.ddl-auto=none`; con el valor por defecto (`create`) Hibernate vuelve a crear todo al iniciar.
 
 Las tablas **no** se crean a mano: con `spring.jpa.hibernate.ddl-auto=create` Hibernate recrea el esquema en cada
 arranque y ejecuta `src/main/resources/import.sql` (2 sedes, 6 salas, 4 equipamientos, 3 servicios, 3 planes,
 5 miembros, 4 cuentas y 15 reservas). Las fechas son relativas a `NOW()`/`CURDATE()`, así que los datos no caducan.
-Puede cambiar las credenciales con las variables de entorno `DB_USERNAME`, `DB_PASSWORD` y `JWT_SECRET`.
+### Variables de entorno
+
+Todas tienen un valor por defecto para desarrollo, así que el proyecto arranca sin configurar nada.
+
+| Variable | Por defecto | Para qué |
+|---|---|---|
+| `DB_URL` | `jdbc:mysql://localhost:3306/coworkhub?...` | URL JDBC de MySQL (cámbiela si usa otro puerto) |
+| `DB_USERNAME` | `coworkhub` | Usuario de MySQL |
+| `DB_PASSWORD` | `coworkhub` | Contraseña de MySQL |
+| `JWT_SECRET` | clave de ejemplo en Base64 | Clave HS256 para firmar los JWT (mínimo 256 bits) |
+| `CORS_ORIGINS` | `http://localhost:5500,http://127.0.0.1:5500` | Orígenes permitidos si el frontend se abre desde otro servidor |
+
+En PowerShell, para la sesión actual:
+
+```powershell
+$env:DB_PASSWORD = "otra-clave"; $env:JWT_SECRET = "<base64 de 32+ bytes>"; .\mvnw.cmd spring-boot:run
+```
 
 ## 6. Ejecución
 
@@ -173,6 +229,40 @@ En Windows:
 ```
 
 La API queda en `http://localhost:8080`. Comprobación: `GET http://localhost:8080/actuator/health` → `{"status":"UP"}`.
+
+### Frontend
+
+El frontend se sirve con el mismo backend: no hay que instalar ni levantar nada más.
+
+- Abra **http://localhost:8080** → pantalla de login → la aplicación (`app.html`).
+- Opcional: abrir `src/main/resources/static/index.html` con **Live Server** de VS Code (puerto 5500). El archivo
+  `js/api.js` detecta que no está en el puerto 8080 y llama a `http://localhost:8080`; el backend permite ese origen
+  por CORS.
+
+| Pantalla | Roles | Qué hace | Endpoints |
+|---|---|---|---|
+| Login | Público | Inicia sesión y guarda el JWT en `sessionStorage` | `POST /auth/login` |
+| Inicio | Todos | Resumen: reservas del día y pendientes (personal) o horas y próximas reservas (miembro) | `/auth/perfil`, `/api/reservas`, `/api/miembros`, `/api/salas`, `/api/miembros/{id}/consumo` |
+| Disponibilidad | Todos | Busca salas libres por sede, fecha, horario, capacidad y equipamiento, y reserva desde el resultado | `GET /api/disponibilidad`, `POST /api/reservas` |
+| Reservas | Todos | Lista con filtros, detalle con costos, servicios adicionales, confirmar, completar y cancelar | `/api/reservas/**` |
+| Mis horas | MEMBER | Consumo mensual del plan: horas incluidas, excedentes, costos y penalizaciones | `GET /api/miembros/{id}/consumo` |
+| Miembros | ADMIN, RECEPTIONIST | Registrar (con cuenta opcional), editar, suspender/activar, eliminar, ver consumo | `/api/miembros/**` |
+| Catálogos | ADMIN | CRUD de sedes, salas, equipamientos, servicios adicionales y planes | `/api/sedes`, `/api/salas`, `/api/equipamientos`, `/api/servicios-adicionales`, `/api/planes` |
+
+Los errores de la API se muestran con su código de regla, por ejemplo `[RN-01] La sala ya tiene una reserva que se cruza…`.
+Si el token expira o es inválido (401) se vuelve al login.
+
+## Roles
+
+| Rol | Quién es | Puede |
+|---|---|---|
+| `ADMIN` | Administrador de la red | Todo: catálogos (crear, editar, eliminar), miembros, reservas de cualquier miembro, confirmar y completar |
+| `RECEPTIONIST` | Personal de recepción | Registrar y gestionar miembros, reservar a nombre de cualquier miembro, confirmar, completar y cancelar reservas. Solo lee los catálogos |
+| `MEMBER` | Cliente con plan de membresía | Ver disponibilidad, reservar a su nombre, ver y cancelar **solo sus** reservas, consultar **su** consumo. Si pide datos de otro miembro recibe `403` |
+
+Los empleados (`ADMIN`, `RECEPTIONIST`) no tienen plan ni consumen horas. Un miembro `SUSPENDED` sigue existiendo, pero
+no puede reservar (RN-05). El menú del frontend muestra solo lo que cada rol puede usar, pero la autorización real la
+hace la API.
 
 ## 7. Usuarios de prueba
 
@@ -318,3 +408,25 @@ powershell -ExecutionPolicy Bypass -File scripts\concurrency-test.ps1 -Requests 
 | `@Transactional` | Servicios (`readOnly` por defecto; `READ_COMMITTED` al crear reservas) |
 | `Clock` / `PasswordEncoder` | Beans en `BeansConfig` (`BCryptPasswordEncoder`) |
 | Inyección por constructor | En todas las clases |
+
+---
+
+## 13. Evidencias de funcionamiento
+
+Capturas tomadas con la aplicación corriendo en `http://localhost:8080` y los datos de `import.sql`
+(carpeta [`docs/evidencias/`](docs/evidencias/)). Los 14 escenarios de aceptación de la API están en la colección de
+Postman y en `scripts/acceptance-test.ps1` (sección 11).
+
+| # | Qué muestra | Captura |
+|---|---|---|
+| 1 | Login con los usuarios de prueba | ![login](docs/evidencias/01-login.jpg) |
+| 2 | Inicio del ADMIN: reservas del día, pendientes, suspendidos y salas activas | ![inicio admin](docs/evidencias/02-inicio-admin.jpg) |
+| 3 | Disponibilidad por sede, fecha, horario y equipamiento | ![disponibilidad](docs/evidencias/03-disponibilidad.jpg) |
+| 4 | Reservas con filtros y acciones según estado (confirmar, completar, cancelar) | ![reservas](docs/evidencias/04-reservas.jpg) |
+| 5 | Reserva que se cruza: el frontend muestra el error `RN-01` de la API | ![RN-01](docs/evidencias/05-error-rn01-cruce.jpg) |
+| 6 | Miembros: cuenta vinculada, estado, suspender/activar, consumo | ![miembros](docs/evidencias/06-miembros.jpg) |
+| 7 | Catálogos (solo ADMIN): CRUD de salas con su equipamiento | ![catalogos](docs/evidencias/07-catalogos-salas.jpg) |
+| 8 | Eliminar una sala con reservas: error `RN-12` | ![RN-12](docs/evidencias/08-error-rn12-eliminar-sala.jpg) |
+| 9 | Inicio del MEMBER (`ana`): menú reducido, horas del plan y solo sus reservas | ![inicio miembro](docs/evidencias/09-inicio-miembro.jpg) |
+| 10 | Mis horas: consumo mensual del plan | ![mis horas](docs/evidencias/10-mis-horas.jpg) |
+| 11 | Swagger UI en `/doc/swagger-ui.html` | ![swagger](docs/evidencias/11-swagger-ui.jpg) |

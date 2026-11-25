@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CoWorkHub</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand small" href="#/inicio"><span class="brand-mark">CW</span><strong>CoWorkHub</strong></a>
+    <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menú">☰</button>
+    <nav id="nav" class="nav"></nav>
+    <div class="user-box">
+      <span id="user-label"></span>
+      <button class="btn ghost" id="logout">Salir</button>
+    </div>
+  </header>
+
+  <main id="view" class="container"></main>
+
+  <dialog id="modal">
+    <form method="dialog" id="modal-form" novalidate>
+      <header class="modal-head">
+        <h2 id="modal-title"></h2>
+        <button type="button" class="btn ghost" data-close aria-label="Cerrar">✕</button>
+      </header>
+      <div id="modal-body"></div>
+      <div id="modal-error" class="alert error" hidden></div>
+      <footer class="modal-foot">
+        <button type="button" class="btn ghost" data-close>Cancelar</button>
+        <button type="submit" class="btn primary" id="modal-ok">Guardar</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/views/inicio.js"></script>
+  <script src="js/views/catalogos.js"></script>
+  <script src="js/views/miembros.js"></script>
+  <script src="js/views/disponibilidad.js"></script>
+  <script src="js/views/reservas.js"></script>
+  <script src="js/views/consumo.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

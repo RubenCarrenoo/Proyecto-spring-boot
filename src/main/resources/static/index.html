@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CoWorkHub · Iniciar sesión</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <div class="brand">
+      <span class="brand-mark">CW</span>
+      <div>
+        <h1>CoWorkHub</h1>
+        <p class="muted">Gestión de salas, miembros y reservas</p>
+      </div>
+    </div>
+
+    <div id="alerta" class="alert" hidden></div>
+
+    <form id="login-form" novalidate>
+      <label>Usuario
+        <input name="usuario" autocomplete="username" required autofocus>
+      </label>
+      <label>Contraseña
+        <input name="password" type="password" autocomplete="current-password" required>
+      </label>
+      <button class="btn primary block" type="submit">Ingresar</button>
+    </form>
+
+    <div class="demo">
+      <p class="muted small">Usuarios de prueba: tocá uno para rellenar el formulario</p>
+      <div class="demo-users">
+        <button type="button" class="demo-user" data-user="admin" data-pass="Admin123*">
+          <strong>admin</strong><span>ADMIN</span>
+        </button>
+        <button type="button" class="demo-user" data-user="recepcion" data-pass="Recep123*">
+          <strong>recepcion</strong><span>RECEPTIONIST</span>
+        </button>
+        <button type="button" class="demo-user" data-user="ana" data-pass="Ana123*">
+          <strong>ana</strong><span>MEMBER</span>
+        </button>
+        <button type="button" class="demo-user" data-user="carlos" data-pass="Carlos123*">
+          <strong>carlos</strong><span>MEMBER</span>
+        </button>
+      </div>
+    </div>
+
+    <p class="muted small">API: <a href="/doc/swagger-ui.html" target="_blank">Swagger UI</a></p>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

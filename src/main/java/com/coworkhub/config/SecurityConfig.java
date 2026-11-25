@@ -4,7 +4,14 @@ import com.coworkhub.security.JwtAuthenticationFilter;
 import com.coworkhub.security.RestAccessDeniedHandler;
 import com.coworkhub.security.RestAuthenticationEntryPoint;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.config.Customizer;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -48,6 +55,11 @@ public class SecurityConfig {
             "/error"
     };
 
+    /** Frontend (HTML, CSS y JS) servido desde src/main/resources/static. La seguridad real está en la API. */
+    private static final String[] FRONTEND = {
+            "/", "/index.html", "/app.html", "/favicon.ico", "/css/**", "/js/**", "/img/**"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    JwtAuthenticationFilter jwtFilter,
@@ -55,6 +67,7 @@ public class SecurityConfig {
                                                    RestAccessDeniedHandler accessDeniedHandler) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
@@ -66,6 +79,8 @@ public class SecurityConfig {
                         // Públicos
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(PUBLIC).permitAll()
+                        .requestMatchers(HttpMethod.GET, FRONTEND).permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Perfil: cualquier autenticado
                         .requestMatchers(HttpMethod.GET, "/auth/perfil").authenticated()
                         // Catálogos: lectura para autenticados, escritura solo ADMIN
@@ -96,6 +111,22 @@ public class SecurityConfig {
         FilterRegistrationBean<JwtAuthenticationFilter> registration = new FilterRegistrationBean<>(filter);
         registration.setEnabled(false);
         return registration;
+    }
+
+    /**
+     * CORS: solo hace falta si el frontend se abre desde otro origen (por ejemplo Live Server de VS Code
+     * en el puerto 5500). Servido desde /static comparte origen con la API y no lo necesita.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${app.cors.allowed-origins:http://localhost:5500,http://127.0.0.1:5500}") List<String> origins) {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(origins);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
     /** AuthenticationManager usado por /auth/login: valida usuario y contraseña BCrypt. */
