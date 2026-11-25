@@ -349,7 +349,7 @@ curl -o docs/openapi.json http://localhost:8080/v3/api-docs
 ./mvnw test
 ```
 
-67 pruebas JUnit 5 / Mockito, que no necesitan base de datos:
+70 pruebas JUnit 5 / Mockito, que no necesitan base de datos:
 
 | Clase | Qué cubre |
 |---|---|

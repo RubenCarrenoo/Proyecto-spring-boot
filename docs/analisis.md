@@ -204,7 +204,7 @@ erDiagram
 
 - Pagos en línea y facturación fiscal (solo se calculan montos).
 - Notificaciones por correo.
-- Interfaz gráfica (proyecto exclusivamente backend; se prueba con Swagger UI y Postman).
+- Frameworks de frontend (React, Angular, etc.) e instalación con npm: el frontend incluido es HTML, CSS y JavaScript puro, servido por el mismo backend desde `src/main/resources/static/`.
 - Gestión por API de las cuentas del personal (ADMIN y RECEPTIONIST vienen en `import.sql`).
 - Recuperación de contraseña y *refresh tokens*.
 - Cambio de contraseña y gestión de la cuenta por el propio miembro.
